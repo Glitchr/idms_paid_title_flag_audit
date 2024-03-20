@@ -1,7 +1,8 @@
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
+
+from vehicle_page import VehiclePage
 
 
 class InventoryPage:
@@ -51,6 +52,12 @@ class InventoryPage:
         """Wait for the loading screen to disappear"""
         return WebDriverWait(self.driver, 10).until(
             EC.invisibility_of_element_located((By.CLASS_NAME, "spinnerContent")))
+    
+    @property
+    def vehicle_list(self):
+        """Select the html table with the list of vehicles"""
+        return WebDriverWait(self.driver, 60).until(
+            EC.presence_of_all_elements_located((By.XPATH, "/html/body/div[3]/div/div[1]/div[5]/form/div[2]/div[4]/div/table/tbody/tr")))
 
     def click_inventory_button(self):
         """Click the selected inventory button to go to the inventory"""
@@ -83,3 +90,31 @@ class InventoryPage:
         print('Searching filtered vehicles...')
         self.search_button.click()
                 
+    def loop_through_vehicle_list(self):
+        """Go through each vehicle in the list to find the flag"""
+        vehicle_page = VehiclePage(self.driver)
+        self.waitout_loading_screen
+        print('Checking each vehicle in the list')
+        vehicles = []
+        rows = self.vehicle_list
+
+        # Initialize a variable to track the current row index
+        current_row = 2
+        print(f"Number of rows: {len(rows[2:])}") # Skip header and unlock row
+        while current_row < len(rows):
+            print(f"({current_row - 2}/{len(rows[2:])} Vehicles:)")
+            rows[current_row].click()
+            
+            # Extract information from the new page (e.g., find the flag)
+            self.waitout_loading_screen
+            vehicle_page.click_note_tab()
+            flag_info = vehicle_page.find_note_with_flag()
+            vehicles.append(flag_info)
+            
+            vehicle_page.go_back_page_button.click()
+            
+            current_row += 1
+            # Refresh the rows list (since the page changed)
+            rows = self.vehicle_list
+
+        return vehicles
