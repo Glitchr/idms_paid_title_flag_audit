@@ -1,5 +1,3 @@
-from time import sleep
-
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from decouple import config
@@ -10,10 +8,10 @@ from inventory_page import InventoryPage
 
 if __name__ == '__main__':
     password = config('PASSWORD')
-    url = config('URL_LINK')
+    url = config('URL')
 
     options = Options()
-    # options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     options.add_experimental_option("detach", True)
     driver = webdriver.Chrome(options=options)
     driver.maximize_window()
@@ -32,9 +30,9 @@ if __name__ == '__main__':
 
     vehicle_list = inventory_page.loop_through_vehicle_list()
 
-    print('Vehicles with more than 10 days past since PAID flag was set')
+    print('\nVehicles with more than 10 days past since PAID flag was set')
     for vehicle in vehicle_list:
-        print(vehicle)
+        print(f'\t{vehicle}')
 
-    print('Script finished')
+    print('\nScript finished')
     driver.quit()
