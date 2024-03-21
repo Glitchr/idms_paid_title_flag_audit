@@ -1,6 +1,9 @@
+import time
+
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import ElementClickInterceptedException
 
 from vehicle_page import VehiclePage
 
@@ -89,6 +92,16 @@ class InventoryPage:
         """Click the search button to pull the filtered vehicles"""
         print('Searching filtered vehicles...')
         self.search_button.click()
+
+    def close_all_error_popups(self):
+        """Close the error popups as they appear"""
+        error_messages = WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_all_elements_located((By.CLASS_NAME, "errorContainer")))
+        for message in error_messages:
+            if message.is_displayed():
+                # Find the close button and click it
+                close_button = message.find_element(By.CSS_SELECTOR, "#ErrorAlertWrapper > div > i.fa-times")
+                close_button.click()
                 
     def loop_through_vehicle_list(self):
         """Go through each vehicle in the list to find the flag"""
@@ -100,19 +113,30 @@ class InventoryPage:
 
         # Initialize a variable to track the current row index
         current_row = 2
-        print(f"Number of rows: {len(rows[2:])}") # Skip header and unlock row
+        print(f"Number of vehicles: {len(rows[2:])}") # Skip header and unlock row
         while current_row < len(rows):
-            print(f"({current_row - 2}/{len(rows[2:])} Vehicles:)")
+            print(f"Vehicles ({current_row - 1}/{len(rows[2:])})")
             rows[current_row].click()
             
             # Extract information from the new page (e.g., find the flag)
             self.waitout_loading_screen
             vehicle_page.click_note_tab()
-            flag_info = vehicle_page.find_note_with_flag()
-            vehicles.append(flag_info)
+            self.waitout_loading_screen
+
+            found, flag_info = vehicle_page.find_note_with_flag()
+
+            if found:
+                vehicles.append(flag_info)
             
-            vehicle_page.go_back_page_button.click()
-            
+            # To close the error pop-up message whenever they appear
+            # that prevent the clicking of the go-back button
+            try:
+                vehicle_page.go_back_page_button.click()
+            except ElementClickInterceptedException:
+                time.sleep(10) # To let the bunch of error pop-ups to load up
+                self.close_all_error_popups()
+                vehicle_page.go_back_page_button.click()
+
             current_row += 1
             # Refresh the rows list (since the page changed)
             rows = self.vehicle_list
