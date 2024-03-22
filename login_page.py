@@ -52,11 +52,13 @@ class LoginPage:
 
     def enter_verification_code(self, code):
         """Send the 2FA code to the input field"""
+        self.verification_code_field.clear()
         self.verification_code_field.send_keys(code)
 
     def verify_2fa_code(self):
         """Click the verify 2FA button"""
         self.verify_2fa_button.click()
+
 
     def login(self, password):
         """Function to log into IDMS"""
@@ -64,7 +66,28 @@ class LoginPage:
         self.enter_password(password)
         self.click_next()
         self.send_2fa_code()
-        auth_code = input('Please enter the 2FA code: ')
-        self.enter_verification_code(auth_code)
-        self.verify_2fa_code()
-        print('2FA code verified')
+        
+        # Allow up to 3 attempts for entering the 2FA code
+        for attempt in range(2):
+            auth_code = input('Please enter the 2FA code: ')
+            self.enter_verification_code(auth_code)
+            self.verify_2fa_code()
+            
+            # Check for error message indicating wrong 2FA code
+            try:
+                error_present = WebDriverWait(self.driver, 2).until(
+                    EC.visibility_of_element_located(
+                        (By.CSS_SELECTOR, "#phoneVerificationControl-readOnly_error_message[aria-hidden='false']")
+                    )
+                )
+            except:
+                error_present = False
+            
+            if error_present:
+                print('You have entered the wrong code, please try again:')
+            else:
+                print('2FA code verified')
+                break  # Exit the loop if verification is successful
+            
+            if attempt == 2:
+                print('Maximum retries allowed, restart the script in 30 minutes')
